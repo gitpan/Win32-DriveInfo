@@ -32,7 +32,7 @@ WriteMakefile(
 sub MY::postamble {
     my $postamble =<<'END';
 
-html: CBCeasy.pm
+html: DriveInfo.pm
 	pod2html --netscape --noindex DriveInfo.pm > DriveInfo.pm.html
 END
 

@@ -58,13 +58,15 @@ eval { @drives2 = grep Win32::DriveInfo::IsReady($_), ("C".."Z") };
 print(( ! $@ ? "" : "not " )."ok ".($test_num++)."\n");
 undef $@;
 
-$dr1 = join "", map uc($_), @drives;
-$dr2 = join "", map uc($_), @drives2;
-$dr1 =~ s/[AB]//gi;
-print(( $dr1 eq $dr2 ? "" : "not " )."ok ".($test_num++)."\n");
-
-
-# print "@drives\n@drives2\n";exit;
+eval {
+$dr1 = join "", map uc($_), grep {Win32::DriveInfo::DriveType($_) == 3} @drives;
+$dr2 = join "", map uc($_), grep {Win32::DriveInfo::DriveType($_) == 3} @drives2;
+};
+$ok = ! $@ && $dr1 eq $dr2;
+warn "Test $test_num fails if one of your fixed drives has no root (not formatted)\n"
+  unless $ok;
+print(( $ok ? "" : "not " )."ok ".($test_num++)."\n");
+undef $@;
 
 
 eval {
@@ -149,7 +151,10 @@ print(( $ok ? "" : "not " )."ok ".($test_num++)."\n");
 sub dir_cmd {
   my $drive = shift;
   substr($drive,1)="";
-  my $out = `dir $drive:\\ /U`;
+
+  my $cmd = $ENV{COMSPEC} || "command.com";
+
+  my $out = `"$cmd" /c dir $drive:\\ /U`;
   return if !$out || $out !~ /\S/ || $?;
 
   # I'm not sure that label can't contain spaces

@@ -14,3 +14,7 @@ Revision history for Perl extension Win32::DriveInfo.
         Empty SerialNumber fixed. Now it's empty string, previously it
 	was evaluated to 0000:0000.
 	Minor enhancements.
+
+ 0.05 - test.pl fixed, other minor fixes. 
+	The last 0.0x version before the major update (soon!)
+

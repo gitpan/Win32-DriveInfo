@@ -1,4 +1,4 @@
-#  Copyright (c) 1998-2000 by Mike Blazer.  All rights reserved.
+#  Copyright (c) 1998-2001 by Mike Blazer.  All rights reserved.
 
 package Win32::DriveInfo;
 
@@ -10,14 +10,14 @@ use vars qw/$VERSION
   $GetVersionEx $GetDiskFreeSpace $GetDiskFreeSpaceEx/;
 
 use constant DWORD_NULL => pack("L",0);
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 #==================
 sub GetVersionEx () {
 #==================
 # on Win95 if returning $dwBuildNumber(low word of original)
 # is greater than 1000, the system is running OSR 2 or a later release.
-   $GetVersionEx ||= new Win32::API("kernel32", "GetVersionEx", [P], N) or return;
+   $GetVersionEx ||= new Win32::API("kernel32", "GetVersionEx", ['P'], 'N') or return;
 
    my ($dwOSVersionInfoSize, $dwMajorVersion, $dwMinorVersion,
        $dwBuildNumber,       $dwPlatformId,   $szCSDVersion) =
@@ -47,7 +47,7 @@ sub GetDiskFreeSpace ($) {
    return undef unless $drive =~ s/^([a-z])(:(\\)?)?$/$1:\\/i;
 
    $GetDiskFreeSpace ||=
-     new Win32::API("kernel32", "GetDiskFreeSpace", [P,P,P,P,P], N) or return;
+     new Win32::API("kernel32", "GetDiskFreeSpace", ['P','P','P','P','P'], 'N') or return;
 
    my ($lpRootPathName, $lpSectorsPerCluster, $lpBytesPerSector,
        $lpNumberOfFreeClusters, $lpTotalNumberOfClusters) =
@@ -60,10 +60,10 @@ sub GetDiskFreeSpace ($) {
 
    ($lpSectorsPerCluster, $lpBytesPerSector,
     $lpNumberOfFreeClusters, $lpTotalNumberOfClusters) =
-   (unpack (L,$lpSectorsPerCluster),
-    unpack (L,$lpBytesPerSector),
-    unpack (L,$lpNumberOfFreeClusters),
-    unpack (L,$lpTotalNumberOfClusters));
+   (unpack ("L",$lpSectorsPerCluster),
+    unpack ("L",$lpBytesPerSector),
+    unpack ("L",$lpNumberOfFreeClusters),
+    unpack ("L",$lpTotalNumberOfClusters));
 
    ($lpSectorsPerCluster, $lpBytesPerSector,
     $lpNumberOfFreeClusters, $lpTotalNumberOfClusters);
@@ -77,7 +77,7 @@ sub GetDiskFreeSpaceEx ($) {
                        $drive =~ s/^(\\\\\w+\\\w+\$?)(\\)?$/$1\\/;
 
    $GetDiskFreeSpaceEx ||=
-       new Win32::API("kernel32", "GetDiskFreeSpaceEx", [P,P,P,P], N) or return;
+       new Win32::API("kernel32", "GetDiskFreeSpaceEx", ['P','P','P','P'], 'N') or return;
 
    my ($lpDirectoryName, $lpFreeBytesAvailableToCaller,
        $lpTotalNumberOfBytes, $lpTotalNumberOfFreeBytes) =
@@ -112,7 +112,7 @@ sub DriveType ($) {
    return undef unless $drive =~ s/^([a-z])(:(\\)?)?$/$1:\\/i ||
                        $drive =~ s/^(\\\\\w+\\\w+\$?)(\\)?$/$1\\/;
 
-   $GetDriveType ||= new Win32::API("kernel32", "GetDriveType", [P], N) or return;
+   $GetDriveType ||= new Win32::API("kernel32", "GetDriveType", ['P'], 'N') or return;
 
    my ($lpDirectoryName) = $drive;
 
@@ -159,11 +159,11 @@ sub DriveSpace ($) {
 sub DrivesInUse () {
 #===========================
    my (@dr, $i);
-   $GetLogicalDrives ||= new Win32::API("kernel32", "GetLogicalDrives", [], N) or return;
+   $GetLogicalDrives ||= new Win32::API("kernel32", "GetLogicalDrives", [], 'N') or return;
 
-   my $bitmask = $GetLogicalDrives->Call();
+   my $bitmask = $GetLogicalDrives->Call;
    for $i(0..25) {
-     push (@dr, (A..Z)[$i]) if $bitmask & 2**$i;
+     push (@dr, chr(ord("A")+$i)) if $bitmask & 2**$i;
    }
    @dr;
 }
@@ -172,9 +172,9 @@ sub DrivesInUse () {
 sub FreeDriveLetters () {
 #===========================
    my (@dr, $i);
-   $GetLogicalDrives ||= new Win32::API("kernel32", "GetLogicalDrives", [], N) or return;
+   $GetLogicalDrives ||= new Win32::API("kernel32", "GetLogicalDrives", [], 'N') or return;
 
-   my $bitmask = $GetLogicalDrives->Call();
+   my $bitmask = $GetLogicalDrives->Call;
    for $i(0..25) {
      push (@dr, (A..Z)[$i]) unless $bitmask & 2**$i;
    }
@@ -200,7 +200,7 @@ sub VolumeInfo ($) {
    return undef unless $drive =~ s/^([a-z])(:(\\)?)?$/$1:\\/i;
 
    $GetVolumeInformation ||=
-    new Win32::API("kernel32", "GetVolumeInformation", [P,P,N,P,P,P,P,N], N) or return;
+    new Win32::API("kernel32", "GetVolumeInformation", ['P','P','N','P','P','P','P','N'], 'N') or return;
 
    my ($lpRootPathName, $lpVolumeNameBuffer, $nVolumeNameSize,
        $lpVolumeSerialNumber, $lpMaximumComponentLength, $lpFileSystemFlags,
@@ -214,9 +214,9 @@ sub VolumeInfo ($) {
    ) == 0;
 
    ($lpVolumeSerialNumber, $lpMaximumComponentLength, $lpFileSystemFlags) =
-   (unpack (L,$lpVolumeSerialNumber),
-    unpack (L,$lpMaximumComponentLength),
-    unpack (L,$lpFileSystemFlags));
+   (unpack ("L",$lpVolumeSerialNumber),
+    unpack ("L",$lpMaximumComponentLength),
+    unpack ("L",$lpFileSystemFlags));
 
    $lpVolumeNameBuffer     =~ s/\0.*$//;
    $lpFileSystemNameBuffer =~ s/\0.*$//;
@@ -412,7 +412,7 @@ C<$FileSystemName, @attr) => B<Win32::DriveInfo::VolumeInfo> ( drive );
         the value 255, rather than the previous 8.3 indicator. Long names can
         also be supported on systems that use the New Technology file system
         (NTFS).
-   $FileSystemName         - name of the file system (such as FAT or NTFS).
+   $FileSystemName         - name of the file system (such as FAT, FAT32, CDFS or NTFS).
    @attr                   - array of integers 1-6
      1 - file system preserves the case of filenames
      2 - file system supports case-sensitive filenames
@@ -487,15 +487,23 @@ this port.
 	was evaluated to 0000:0000.
 	Minor enhancements.
 
+ 0.05 - test.pl fixed, other minor fixes. 
+	The last 0.0x version before the major update (soon!)
+
 =head1 BUGS
 
-Please report.
+C<DriveSpace ( )> returns incorrect $NumberOfFreeClusters,
+$TotalNumberOfClusters values on the large ( >2M ) drives.
+Dunno whether somebody use these values or not but I'll try to
+fix this in the next release.
+
+Please report if any bugs.
 
 =head1 VERSION
 
-This man page documents Win32::DriveInfo version 0.04
+This man page documents Win32::DriveInfo version 0.05
 
-March 12, 2000.
+February 18, 2001
 
 =head1 AUTHOR
 
@@ -503,7 +511,7 @@ Mike Blazer C<<>blazer@mail.nevalink.ruC<>>
 
 =head1 COPYRIGHT
 
-Copyright (C) 1998-2000 by Mike Blazer. All rights reserved.
+Copyright (C) 1998-2001 by Mike Blazer. All rights reserved.
 
 =head1 LICENSE
 
