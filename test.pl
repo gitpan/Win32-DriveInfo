@@ -132,16 +132,28 @@ undef $@;
 
 $ok=0;
 for (@drives3) {
-  ($label, $serial, $free) = dir_cmd($_);
+  ($label, $serial, $free, $units) = dir_cmd($_);
+#print "$label, $serial, $free, $units|".$vol->{$_}{"label"}.",".$vol->{$_}{"serial"}.",".$vol->{$_}{"free"}."\n";
   $label ||= ""; $serial ||= ""; $free ||= 0;
 
   $ok =
   $label  eq $vol->{$_}{"label"} &&
-  # god knows why dir command does not return serial for CD-ROMs
-  ($vol->{$_}{"type"} == 5 || $serial eq $vol->{$_}{"serial"}) &&
-  $free   eq $vol->{$_}{"free"};
+  (($serial eq $vol->{$_}{"serial"}) ||
+  # god knows why 4DOS does not return serial for CD-ROMs
+  # but command.com does
+   ($serial eq "") ||
+  # RAM drives
+  # 4DOS returns 0000:0000 serial when command.com returns nothing
+  # I'm sure this is just a misinterpretation
+   ($serial eq "0000:0000" && $vol->{$_}{"serial"} eq "")
+  ) &&
+  ($units ne "bytes" || $free eq $vol->{$_}{"free"});
 
-  print "Drive $_: `dir' and module returned ".( $ok ? "" : "not " )."the same \n";
+  if ($units ne "bytes") {
+    print "Drive $_: `dir' does not return the exact free space\n";
+  } else {
+    print "Drive $_: `dir' and module returned ".( $ok ? "" : "not " )."the same\n";
+  }
 
   $ok or last;
 }
@@ -154,17 +166,29 @@ sub dir_cmd {
 
   my $cmd = $ENV{COMSPEC} || "command.com";
 
-  my $out = `"$cmd" /c dir $drive:\\ /U`;
+  # cmd.exe + nmake sometimes give $? == -1
+  # one case is - when I erroneously called dmake first
+  # after that I had to reopen shell to get rid of this error
+  my $out = `"$cmd" /c dir $drive:\\`;   # print "$?,".length($out)."\n";
   return if !$out || $out !~ /\S/ || $?;
 
-  # I'm not sure that label can't contain spaces
-  my ($label)  =
-     ($out =~ /Volume[\t ]+in[\t ]+drive[\t ]+$drive[\t ]+is[\t ]*(.*?)([\t ]+Serial[\t ]+number[\t ]+is|[\t ]*$)/im) ? $1 : "";
-  $label = "" if $label eq "unlabeled";
+  # label can contain spaces
+  my $label;
+  if      ($out =~ /Volume[\t ]+in[\t ]+drive[\t ]+$drive[\t ]+(is[\t ]+unlabeled|has[\t ]+no[\t ]+label)/i) {
+      $label = "";
+  } elsif ($out =~ /Volume[\t ]+in[\t ]+drive[\t ]+$drive[\t ]+is[\t ]*(.*?)([\t ]+Serial[\t ]+number[\t ]+is|[\t ]*$)/im) {
+      $label = $1;
+  } else {
+      $label = "";
+  }
 
   my ($serial) = ($out =~ /Serial[\t ]+number[\t ]+is[\t ]*(.*?)[\t ]*$/im) ? $1 : "";
-  my ($free) = $out =~
-     /((?:\d+\s*)+)bytes\s+free/i or return;
-  $free  =~ s/\s+//g;
-  ($label, $serial, $free);
+  $serial =~ s/-/:/g; # command.com and cmd.exe use - delimiter
+
+  # stupid command.com returns partial MB value on large drives
+  # cmd.exe uses , or \xFF or God knows what separator
+  my ($free, $units) = $out =~ /(\d[\d\W]+)(bytes|MB|GB)\s+free/i or return;
+  $free  =~ s/\D//g;
+
+  ($label, $serial, $free, $units);
 }

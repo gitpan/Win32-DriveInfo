@@ -10,7 +10,7 @@ use vars qw/$VERSION
   $GetVersionEx $GetDiskFreeSpace $GetDiskFreeSpaceEx/;
 
 use constant DWORD_NULL => pack("L",0);
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 #==================
 sub GetVersionEx () {
@@ -490,6 +490,8 @@ this port.
  0.05 - test.pl fixed, other minor fixes. 
 	The last 0.0x version before the major update (soon!)
 
+ 0.06 - test.pl fixed more ;-)
+
 =head1 BUGS
 
 C<DriveSpace ( )> returns incorrect $NumberOfFreeClusters,
@@ -501,9 +503,9 @@ Please report if any bugs.
 
 =head1 VERSION
 
-This man page documents Win32::DriveInfo version 0.05
+This man page documents Win32::DriveInfo version 0.06
 
-February 18, 2001
+February 19, 2001
 
 =head1 AUTHOR
 

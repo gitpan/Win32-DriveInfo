@@ -46,7 +46,7 @@ it would work fine with other ports like ActiveState if Win32::API
 
 VERSION 
 
-This man page documents Win32::DriveInfo version 0.04 
+This man page documents Win32::DriveInfo version 0.06 
 
 March 12, 2000. 
 

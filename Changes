@@ -18,3 +18,5 @@ Revision history for Perl extension Win32::DriveInfo.
  0.05 - test.pl fixed, other minor fixes. 
 	The last 0.0x version before the major update (soon!)
 
+ 0.06 - test.pl fixed more ;-)
+
